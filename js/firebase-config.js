@@ -4,7 +4,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAjSu9b46JKp1xVRaRIyHhVsqVyYtT7cPA",
   authDomain: "voting-c14a8.firebaseapp.com",
   projectId: "voting-c14a8",
-  storageBucket: "voting-c14a8.firebasestorage.app",
+  storageBucket: "voting-c14a8.appspot.com",
   messagingSenderId: "517448112515",
   appId: "1:517448112515:web:3e158e0e8e863ed240feb6",
   measurementId: "G-R860NTR3XN",
