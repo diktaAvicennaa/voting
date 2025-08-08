@@ -1,0 +1,40 @@
+/* Menggunakan font Inter dari Google Fonts */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Style untuk kartu kandidat yang dipilih */
+.candidate-card.selected {
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+/* Animasi sederhana untuk pes/* Menggunakan font Inter dari Google Fonts */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Style untuk kartu kandidat yang dipilih */
+.candidate-card.selected {
+    border-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+/* Animasi sederhana untuk pesan */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+an */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
