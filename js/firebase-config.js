@@ -1,12 +1,13 @@
 // Konfigurasi dan inisialisasi Firebase
 // GANTI DENGAN KONFIGURASI FIREBASE ANDA
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyAjSu9b46JKp1xVRaRIyHhVsqVyYtT7cPA",
+  authDomain: "voting-c14a8.firebaseapp.com",
+  projectId: "voting-c14a8",
+  storageBucket: "voting-c14a8.firebasestorage.app",
+  messagingSenderId: "517448112515",
+  appId: "1:517448112515:web:3e158e0e8e863ed240feb6",
+  measurementId: "G-R860NTR3XN",
 };
 
 if (!firebase.apps.length) {
