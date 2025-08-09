@@ -7,6 +7,8 @@ function loadAdminDashboard() {
 }
 
 function loadVoteChart() {
+  console.log("Loading vote chart..."); // Debug log
+
   db.collection("candidates")
     .orderBy("number")
     .get()
@@ -15,6 +17,9 @@ function loadVoteChart() {
       const data = [];
       const colors = [];
       const candidateIds = [];
+
+      console.log("Got candidates:", snapshot.size); // Debug log
+
       snapshot.forEach((doc) => {
         const d = doc.data();
         labels.push(d.name);
@@ -27,14 +32,30 @@ function loadVoteChart() {
         .then((voteSnap) => {
           const count = {};
           candidateIds.forEach((id) => (count[id] = 0));
+
+          console.log("Got votes:", voteSnap.size); // Debug log
+
           voteSnap.forEach((voteDoc) => {
             const cid = voteDoc.data().candidateId;
             if (count[cid] !== undefined) count[cid]++;
           });
+
           candidateIds.forEach((id, i) => (data[i] = count[id]));
 
-          const ctx = document.getElementById("voteChart").getContext("2d");
-          if (window.voteChart) window.voteChart.destroy();
+          const canvas = document.getElementById("voteChart");
+          if (!canvas) {
+            console.error("Canvas element not found!"); // Debug error
+            return;
+          }
+
+          const ctx = canvas.getContext("2d");
+          if (window.voteChart) {
+            console.log("Destroying old chart"); // Debug log
+            window.voteChart.destroy();
+          }
+
+          console.log("Creating new chart with data:", { labels, data }); // Debug log
+
           window.voteChart = new Chart(ctx, {
             type: "bar",
             data: {
@@ -44,17 +65,50 @@ function loadVoteChart() {
                   label: "Jumlah Suara",
                   data: data,
                   backgroundColor: colors,
+                  borderWidth: 1,
+                  borderColor: "#2563eb",
                 },
               ],
             },
             options: {
               responsive: true,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+                title: {
+                  display: true,
+                  text: "Hasil Perolehan Suara",
+                  font: {
+                    size: 16,
+                  },
+                },
+              },
               scales: {
-                y: { beginAtZero: true, precision: 0 },
+                y: {
+                  beginAtZero: true,
+                  precision: 0,
+                  title: {
+                    display: true,
+                    text: "Jumlah Suara",
+                  },
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: "Nama Kandidat",
+                  },
+                },
               },
             },
           });
+        })
+        .catch((error) => {
+          console.error("Error getting votes:", error); // Debug error
         });
+    })
+    .catch((error) => {
+      console.error("Error getting candidates:", error); // Debug error
     });
 }
 
