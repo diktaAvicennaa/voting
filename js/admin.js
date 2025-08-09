@@ -4,7 +4,7 @@
 function loadAdminDashboard() {
   console.log("Loading admin dashboard...");
   loadVoteChart();
-  loadAdminCandidates();
+  loadAdminCandidates(); // Fungsi ini sekarang akan menggunakan real-time listener
   addResetVotesButton();
   addVotingDetails();
 }
@@ -17,111 +17,113 @@ function loadVoteChart() {
     return;
   }
 
+  // --- PERUBAHAN UNTUK CHART ---
+  // Chart juga diubah menjadi real-time agar selalu sinkron
   db.collection("candidates")
     .orderBy("number")
-    .get()
-    .then((snapshot) => {
-      const labels = [];
-      const data = [];
-      const colors = [];
-      const candidateIds = [];
+    .onSnapshot(
+      (snapshot) => {
+        const labels = [];
+        const data = [];
+        const colors = [];
+        const candidateIds = [];
 
-      console.log("Got candidates:", snapshot.size);
+        console.log("Chart update: Got candidates:", snapshot.size);
 
-      snapshot.forEach((doc) => {
-        const d = doc.data();
-        labels.push(d.name);
-        colors.push("#60a5fa");
-        candidateIds.push(doc.id);
-      });
-
-      db.collection("votes")
-        .get()
-        .then((voteSnap) => {
-          const count = {};
-          candidateIds.forEach((id) => (count[id] = 0));
-
-          console.log("Got votes:", voteSnap.size);
-
-          voteSnap.forEach((voteDoc) => {
-            const cid = voteDoc.data().candidateId;
-            if (count[cid] !== undefined) count[cid]++;
-          });
-
-          candidateIds.forEach((id, i) => (data[i] = count[id]));
-
-          const canvas = document.getElementById("voteChart");
-          if (!canvas) {
-            console.error("Canvas element not found!");
-            return;
-          }
-
-          const ctx = canvas.getContext("2d");
-          if (window.voteChart) {
-            console.log("Destroying old chart");
-            window.voteChart.destroy();
-          }
-
-          console.log("Creating chart with data:", { labels, data });
-
-          window.voteChart = new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: labels,
-              datasets: [
-                {
-                  label: "Jumlah Suara",
-                  data: data,
-                  backgroundColor: colors,
-                  borderWidth: 1,
-                  borderColor: "#2563eb",
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
-                },
-                title: {
-                  display: true,
-                  text: "Hasil Perolehan Suara",
-                  font: {
-                    size: 16,
-                  },
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  precision: 0,
-                  title: {
-                    display: true,
-                    text: "Jumlah Suara",
-                  },
-                },
-                x: {
-                  title: {
-                    display: true,
-                    text: "Nama Kandidat",
-                  },
-                },
-              },
-            },
-          });
-        })
-        .catch((error) => {
-          console.error("Error getting votes:", error);
+        snapshot.forEach((doc) => {
+          const d = doc.data();
+          labels.push(d.name);
+          colors.push("#60a5fa");
+          candidateIds.push(doc.id);
         });
-    })
-    .catch((error) => {
-      console.error("Error getting candidates:", error);
-    });
+
+        db.collection("votes").onSnapshot(
+          (voteSnap) => {
+            const count = {};
+            candidateIds.forEach((id) => (count[id] = 0));
+
+            console.log("Chart update: Got votes:", voteSnap.size);
+
+            voteSnap.forEach((voteDoc) => {
+              const cid = voteDoc.data().candidateId;
+              if (count[cid] !== undefined) count[cid]++;
+            });
+
+            candidateIds.forEach((id, i) => (data[i] = count[id]));
+
+            const canvas = document.getElementById("voteChart");
+            if (!canvas) {
+              console.error("Canvas element not found!");
+              return;
+            }
+
+            const ctx = canvas.getContext("2d");
+            if (window.voteChart) {
+              console.log("Destroying old chart");
+              window.voteChart.destroy();
+            }
+
+            console.log("Creating/Updating chart with data:", { labels, data });
+
+            window.voteChart = new Chart(ctx, {
+              type: "bar",
+              data: {
+                labels: labels,
+                datasets: [
+                  {
+                    label: "Jumlah Suara",
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 1,
+                    borderColor: "#2563eb",
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: "top",
+                  },
+                  title: {
+                    display: true,
+                    text: "Hasil Perolehan Suara",
+                    font: {
+                      size: 16,
+                    },
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 1,
+                    },
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: "Nama Kandidat",
+                    },
+                  },
+                },
+              },
+            });
+          },
+          (error) => {
+            console.error("Error listening to votes for chart:", error);
+          }
+        );
+      },
+      (error) => {
+        console.error("Error listening to candidates for chart:", error);
+      }
+    );
 }
 
+// --- FUNGSI INI SEPENUHNYA DIGANTI ---
 function loadAdminCandidates() {
-  console.log("Loading admin candidates...");
+  console.log("Loading admin candidates with real-time listener...");
   const adminCandidateList = document.getElementById("admin-candidate-list");
   if (!adminCandidateList) {
     console.error("Admin candidate list element not found");
@@ -137,68 +139,73 @@ function loadAdminCandidates() {
     return;
   }
 
+  // MENGGUNAKAN .onSnapshot() BUKAN .get()
   db.collection("candidates")
     .orderBy("number")
-    .get()
-    .then((snapshot) => {
-      console.log("Got candidates:", snapshot.size);
+    .onSnapshot(
+      // Ini adalah perubahan utamanya
+      (snapshot) => {
+        console.log(
+          "Real-time update received. Candidates count:",
+          snapshot.size
+        );
 
-      if (snapshot.empty) {
-        adminCandidateList.innerHTML =
-          '<div class="text-gray-400">Belum ada kandidat.</div>';
-        return;
-      }
+        if (snapshot.empty) {
+          adminCandidateList.innerHTML =
+            '<div class="text-gray-400">Belum ada kandidat.</div>';
+          return;
+        }
 
-      adminCandidateList.innerHTML = "";
-      snapshot.forEach((doc) => {
-        console.log("Processing candidate:", doc.id);
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.className =
-          "flex items-center justify-between bg-white p-3 rounded shadow";
-        div.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <img src="${data.photoUrl || "https://via.placeholder.com/50"}"
-                 class="w-12 h-12 rounded-full object-cover border border-blue-200"
-                 alt="${data.name}">
-            <div>
-              <div class="font-bold">${data.name}</div>
-              <div class="text-xs text-gray-500">Jabatan: ${data.position}</div>
+        adminCandidateList.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className =
+            "flex items-center justify-between bg-white p-3 rounded shadow";
+          div.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <img src="${data.photoUrl || "https://via.placeholder.com/50"}"
+                   class="w-12 h-12 rounded-full object-cover border border-blue-200"
+                   alt="${data.name}">
+              <div>
+                <div class="font-bold">${data.name}</div>
+                <div class="text-xs text-gray-500">Jabatan: ${
+                  data.position
+                }</div>
+              </div>
             </div>
-          </div>
-          <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
-            doc.id
-          }">
-            <i class="fas fa-trash"></i>
-          </button>
-        `;
-        adminCandidateList.appendChild(div);
-      });
-
-      document.querySelectorAll(".delete-candidate-btn").forEach((btn) => {
-        btn.addEventListener("click", function () {
-          const id = this.getAttribute("data-id");
-          if (confirm("Yakin hapus kandidat ini?")) {
-            db.collection("candidates")
-              .doc(id)
-              .delete()
-              .then(() => {
-                loadAdminCandidates();
-                loadVoteChart();
-              })
-              .catch((error) => {
-                console.error("Error deleting:", error);
-                alert("Gagal menghapus kandidat: " + error.message);
-              });
-          }
+            <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
+              doc.id
+            }">
+              <i class="fas fa-trash"></i>
+            </button>
+          `;
+          adminCandidateList.appendChild(div);
         });
-      });
-    })
-    .catch((error) => {
-      console.error("Error loading candidates:", error);
-      adminCandidateList.innerHTML =
-        '<div class="text-red-500">Error: Gagal memuat kandidat!</div>';
-    });
+
+        // Pindahkan event listener untuk tombol hapus ke sini agar selalu ter-update
+        document.querySelectorAll(".delete-candidate-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const id = this.getAttribute("data-id");
+            if (confirm("Yakin hapus kandidat ini?")) {
+              db.collection("candidates")
+                .doc(id)
+                .delete()
+                .catch((error) => {
+                  console.error("Error deleting:", error);
+                  alert("Gagal menghapus kandidat: " + error.message);
+                });
+            }
+          });
+        });
+      },
+      (error) => {
+        // Ini adalah blok untuk menangani error dari listener
+        console.error("Error listening to candidates:", error);
+        adminCandidateList.innerHTML =
+          '<div class="text-red-500">Error: Gagal memuat kandidat!</div>';
+      }
+    );
 }
 
 // Konfigurasi Cloudinary
@@ -256,15 +263,12 @@ if (document.getElementById("add-candidate-form")) {
           .getElementById("candidate-position")
           .value.trim();
         const name = document.getElementById("candidate-name").value.trim();
-        // --- PERBAIKAN --- Mengambil nilai dari input nomor urut
         const numberInput = document.getElementById("candidate-number").value;
 
-        // --- PERBAIKAN --- Memastikan semua field, termasuk nomor urut, sudah diisi
         if (!position || !name || !photoFile || !numberInput) {
           throw new Error("Semua field wajib diisi!");
         }
 
-        // --- PERBAIKAN --- Mengubah string menjadi angka (integer)
         const number = parseInt(numberInput, 10);
 
         // Show loading state
@@ -283,8 +287,9 @@ if (document.getElementById("add-candidate-form")) {
         }
 
         // Save to Firestore
+        // Tidak perlu memanggil loadAdminCandidates() lagi di sini karena sudah real-time
         const docRef = await db.collection("candidates").add({
-          number: number, // --- PERBAIKAN --- Menambahkan field 'number' untuk disimpan
+          number: number,
           position: position,
           name: name,
           photoUrl: result.secure_url,
@@ -298,10 +303,8 @@ if (document.getElementById("add-candidate-form")) {
         addCandidateError.textContent = "Kandidat berhasil ditambahkan!";
         addCandidateError.className = "text-green-500 text-sm mt-2";
 
-        // Refresh candidate list
-        loadAdminCandidates();
-        // Refresh chart juga
-        loadVoteChart();
+        // Kita tidak perlu memanggil loadAdminCandidates() atau loadVoteChart() secara manual lagi
+        // karena .onSnapshot sudah menanganinya secara otomatis
       } catch (err) {
         console.error("Error:", err);
         addCandidateError.textContent =
@@ -360,7 +363,7 @@ async function resetAllVotes() {
     await batch.commit();
 
     showMessage("Semua suara berhasil direset!", "success");
-    loadVoteChart(); // Refresh chart
+    // loadVoteChart() akan ter-update otomatis karena sudah real-time
   } catch (error) {
     console.error("Error resetting votes:", error);
     showMessage("Gagal mereset suara: " + error.message, "error");
