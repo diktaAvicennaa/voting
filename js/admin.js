@@ -121,7 +121,7 @@ const CLOUDINARY_UPLOAD_PRESET = "upload";
 async function uploadToCloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("upload", CLOUDINARY_UPLOAD_PRESET);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   const response = await fetch(CLOUDINARY_URL, {
     method: "POST",
     body: formData,
@@ -148,6 +148,7 @@ if (document.getElementById("add-candidate-form")) {
       try {
         // Upload ke Cloudinary
         const result = await uploadToCloudinary(photoFile);
+        console.log(result); // Tambahkan log ini
         if (!result.secure_url) throw new Error("Upload gagal");
         const photoUrl = result.secure_url;
         // Simpan data kandidat ke Firestore
