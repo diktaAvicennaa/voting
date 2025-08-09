@@ -79,21 +79,21 @@ function loadAdminCandidates() {
         div.className =
           "flex items-center justify-between bg-white p-3 rounded shadow";
         div.innerHTML = `
-        <div class="flex items-center space-x-3">
-          <img src="${
-            data.photoUrl || "https://via.placeholder.com/50"
-          }" class="w-12 h-12 rounded-full object-cover border border-blue-200">
-          <div>
-            <div class="font-bold">${data.name}</div>
-            <div class="text-xs text-gray-500">No. Urut: ${data.number}</div>
+          <div class="flex items-center space-x-3">
+            <img src="${
+              data.photoUrl || "https://via.placeholder.com/50"
+            }" class="w-12 h-12 rounded-full object-cover border border-blue-200">
+            <div>
+              <div class="font-bold">${data.name}</div>
+              <div class="text-xs text-gray-500">No. Urut: ${data.number}</div>
+            </div>
           </div>
-        </div>
-        <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
-          doc.id
-        }">
-          <i class="fas fa-trash"></i>
-        </button>
-      `;
+          <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
+            doc.id
+          }">
+            <i class="fas fa-trash"></i>
+          </button>
+        `;
         adminCandidateList.appendChild(div);
       });
 
