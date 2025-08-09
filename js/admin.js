@@ -5,6 +5,8 @@ function loadAdminDashboard() {
   console.log("Loading admin dashboard...");
   loadVoteChart();
   loadAdminCandidates();
+  addResetVotesButton();
+  addVotingDetails();
 }
 
 function loadVoteChart() {
@@ -161,7 +163,7 @@ function loadAdminCandidates() {
                  alt="${data.name}">
             <div>
               <div class="font-bold">${data.name}</div>
-              <div class="text-xs text-gray-500">No. Urut: ${data.number}</div>
+              <div class="text-xs text-gray-500">Jabatan: ${data.position}</div>
             </div>
           </div>
           <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
@@ -250,12 +252,12 @@ if (document.getElementById("add-candidate-form")) {
           throw new Error("Pilih file gambar (JPG, PNG)");
         }
 
-        const number = parseInt(
-          document.getElementById("candidate-number").value
-        );
+        const position = document
+          .getElementById("candidate-position")
+          .value.trim();
         const name = document.getElementById("candidate-name").value.trim();
 
-        if (!number || !name || !photoFile) {
+        if (!position || !name || !photoFile) {
           throw new Error("Semua field wajib diisi!");
         }
 
@@ -276,7 +278,7 @@ if (document.getElementById("add-candidate-form")) {
 
         // Save to Firestore
         const docRef = await db.collection("candidates").add({
-          number: number,
+          position: position,
           name: name,
           photoUrl: result.secure_url,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -305,4 +307,117 @@ if (document.getElementById("add-candidate-form")) {
         }
       }
     });
+}
+
+// Tambahkan tombol Reset Votes di bagian admin
+function addResetVotesButton() {
+  const adminControls = document.querySelector("#admin-container .mb-10");
+  if (!adminControls) return;
+
+  const resetButton = document.createElement("button");
+  resetButton.className =
+    "mt-4 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 text-sm";
+  resetButton.innerHTML =
+    '<i class="fas fa-trash-alt mr-2"></i>Reset Semua Suara';
+
+  resetButton.addEventListener("click", resetAllVotes);
+  adminControls.appendChild(resetButton);
+}
+
+async function resetAllVotes() {
+  if (!auth.currentUser?.email?.includes("admin")) {
+    showMessage("Hanya admin yang dapat mereset suara!", "error");
+    return;
+  }
+
+  if (
+    !confirm(
+      "PERHATIAN: Ini akan menghapus SEMUA suara yang sudah masuk. Lanjutkan?"
+    )
+  ) {
+    return;
+  }
+
+  try {
+    // Get all votes
+    const votesSnapshot = await db.collection("votes").get();
+
+    // Delete each vote
+    const batch = db.batch();
+    votesSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    showMessage("Semua suara berhasil direset!", "success");
+    loadVoteChart(); // Refresh chart
+  } catch (error) {
+    console.error("Error resetting votes:", error);
+    showMessage("Gagal mereset suara: " + error.message, "error");
+  }
+}
+
+// Tambahkan fungsi untuk melihat detail voting
+function addVotingDetails() {
+  const adminControls = document.querySelector("#admin-container .mb-10");
+  if (!adminControls) return;
+
+  const detailsButton = document.createElement("button");
+  detailsButton.className =
+    "ml-4 mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-sm";
+  detailsButton.innerHTML = '<i class="fas fa-list mr-2"></i>Detail Pemilih';
+
+  detailsButton.addEventListener("click", showVotingDetails);
+  adminControls.appendChild(detailsButton);
+}
+
+async function showVotingDetails() {
+  try {
+    const votesSnapshot = await db
+      .collection("votes")
+      .orderBy("timestamp", "desc")
+      .get();
+
+    let details = votesSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return `
+        <tr>
+          <td class="px-4 py-2">${data.userEmail}</td>
+          <td class="px-4 py-2">${
+            data.timestamp?.toDate().toLocaleString() || "N/A"
+          }</td>
+        </tr>
+      `;
+    });
+
+    const modal = document.createElement("div");
+    modal.className =
+      "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4";
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-auto">
+        <h3 class="text-xl font-bold mb-4">Detail Pemilih</h3>
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="px-4 py-2 text-left">Email Pemilih</th>
+              <th class="px-4 py-2 text-left">Waktu Memilih</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${details.join("")}
+          </tbody>
+        </table>
+        <button class="mt-4 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
+          Tutup
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.querySelector("button").onclick = () => modal.remove();
+  } catch (error) {
+    console.error("Error showing voting details:", error);
+    showMessage("Gagal memuat detail pemilih", "error");
+  }
 }

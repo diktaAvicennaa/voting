@@ -4,68 +4,187 @@
 function loadCandidates() {
   const candidateList = document.getElementById("candidate-list");
   if (!candidateList) return;
-  candidateList.innerHTML =
-    '<div class="col-span-2 text-center text-gray-400">Memuat kandidat...</div>';
+
+  candidateList.innerHTML = `
+    <div class="text-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+      <p class="mt-3 text-gray-600">Memuat daftar kandidat...</p>
+    </div>
+  `;
+
   db.collection("candidates")
-    .orderBy("number")
+    .orderBy("position")
     .get()
     .then((snapshot) => {
       if (snapshot.empty) {
-        candidateList.innerHTML =
-          '<div class="col-span-2 text-center text-gray-400">Belum ada kandidat.</div>';
+        candidateList.innerHTML = `
+          <div class="text-center py-8">
+            <p class="text-gray-500">Belum ada kandidat yang terdaftar</p>
+          </div>
+        `;
         return;
       }
-      candidateList.innerHTML = "";
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const card = document.createElement("div");
-        card.className =
-          "bg-gray-50 rounded-lg p-6 flex flex-col items-center shadow";
-        card.innerHTML = `
-        <img src="${
-          data.photoUrl || "https://via.placeholder.com/100"
-        }" alt="Foto" class="w-24 h-24 rounded-full mb-4 object-cover border-2 border-blue-200">
-        <div class="text-lg font-bold mb-1">${data.name}</div>
-        <div class="text-gray-500 mb-4">No. Urut: ${data.number}</div>
-        <button class="vote-btn bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition" data-id="${
-          doc.id
-        }">Pilih</button>
+
+      candidateList.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          ${snapshot.docs
+            .map((doc) => {
+              const data = doc.data();
+              return `
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105">
+                  <div class="relative pb-48">
+                    <img
+                      src="${data.photoUrl}"
+                      alt="${data.name}"
+                      class="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+                  <div class="p-4">
+                    <div class="uppercase tracking-wide text-sm text-blue-500 font-semibold">
+                      ${data.position}
+                    </div>
+                    <h3 class="mt-2 text-xl font-semibold text-gray-800">
+                      ${data.name}
+                    </h3>
+                    <div class="mt-4">
+                      <button
+                        onclick="vote('${doc.id}')"
+                        data-candidate-id="${doc.id}"
+                        class="vote-btn w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 ease-in-out transform hover:-translate-y-1"
+                      >
+                        Pilih Kandidat
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            })
+            .join("")}
+        </div>
       `;
-        candidateList.appendChild(card);
+
+      // Disable vote buttons if user has voted
+      checkIfUserHasVoted();
+    })
+    .catch((error) => {
+      console.error("Error loading candidates:", error);
+      candidateList.innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-red-500">Gagal memuat daftar kandidat. Silakan coba lagi.</p>
+        </div>
+      `;
+    });
+}
+
+function checkIfUserHasVoted() {
+  if (!auth.currentUser) return;
+
+  db.collection("votes")
+    .where("userId", "==", auth.currentUser.uid)
+    .get()
+    .then((snapshot) => {
+      const hasVoted = !snapshot.empty;
+      const buttons = document.querySelectorAll(".vote-btn");
+
+      buttons.forEach((btn) => {
+        btn.disabled = hasVoted;
+        if (hasVoted) {
+          const votedId = snapshot.docs[0].data().candidateId;
+          if (btn.getAttribute("data-candidate-id") === votedId) {
+            btn.className =
+              "vote-btn w-full bg-green-500 text-white py-2 px-4 rounded-md cursor-not-allowed";
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Dipilih';
+          } else {
+            btn.className =
+              "vote-btn w-full bg-gray-300 text-gray-600 py-2 px-4 rounded-md cursor-not-allowed";
+            btn.textContent = "Tidak Dapat Memilih";
+          }
+        }
       });
 
-      // Cek apakah sudah voting
-      db.collection("votes")
-        .doc(auth.currentUser.uid)
-        .get()
-        .then((voteDoc) => {
-          if (voteDoc.exists) {
-            document
-              .querySelectorAll(".vote-btn")
-              .forEach((btn) => (btn.disabled = true));
-            showMessage("Anda sudah memberikan suara.", "text-green-600");
-          } else {
-            document.querySelectorAll(".vote-btn").forEach((btn) => {
-              btn.disabled = false;
-              btn.addEventListener("click", function () {
-                voteCandidate(this.getAttribute("data-id"));
-              });
-            });
-            showMessage("", "");
-          }
-        });
+      // Tampilkan pesan jika sudah memilih
+      if (hasVoted) {
+        showMessage(
+          "Anda sudah memberikan suara. Hubungi admin jika ada masalah.",
+          "info"
+        );
+      }
     });
 }
 
-function voteCandidate(candidateId) {
+function vote(candidateId) {
+  if (!auth.currentUser) {
+    showMessage("Anda harus login terlebih dahulu!", "error");
+    return;
+  }
+
+  // Cek apakah sudah memilih
   db.collection("votes")
-    .doc(auth.currentUser.uid)
-    .set({
-      candidateId: candidateId,
-      email: auth.currentUser.email,
-      votedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    .where("userId", "==", auth.currentUser.uid)
+    .get()
+    .then((snapshot) => {
+      if (!snapshot.empty) {
+        showMessage("Anda sudah memberikan suara!", "error");
+        return Promise.reject("Already voted");
+      }
+
+      // Konfirmasi pemilihan
+      if (
+        !confirm(
+          "Apakah Anda yakin dengan pilihan Anda? Pilihan tidak dapat diubah."
+        )
+      ) {
+        return Promise.reject("Cancelled");
+      }
+
+      // Simpan vote
+      return db.collection("votes").add({
+        candidateId: candidateId,
+        userId: auth.currentUser.uid,
+        userEmail: auth.currentUser.email,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
     })
     .then(() => {
-      loadCandidates();
+      showMessage("Terima kasih atas partisipasi Anda!", "success");
+      checkIfUserHasVoted();
+    })
+    .catch((error) => {
+      if (error === "Already voted" || error === "Cancelled") return;
+      console.error("Error voting:", error);
+      showMessage("Gagal melakukan voting. Silakan coba lagi.", "error");
     });
 }
+
+function showMessage(message, type = "info") {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+    type === "error"
+      ? "bg-red-500"
+      : type === "success"
+      ? "bg-green-500"
+      : "bg-blue-500"
+  } text-white transform transition-all duration-300 ease-in-out`;
+  messageDiv.textContent = message;
+  document.body.appendChild(messageDiv);
+
+  // Animate in
+  setTimeout(() => messageDiv.classList.add("translate-y-4"), 100);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    messageDiv.classList.remove("translate-y-4");
+    messageDiv.classList.add("-translate-y-full");
+    setTimeout(() => messageDiv.remove(), 300);
+  }, 3000);
+}
+
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  loadCandidates();
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      checkIfUserHasVoted();
+    }
+  });
+});
