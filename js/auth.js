@@ -3,6 +3,17 @@
 
 const ADMIN_EMAIL = "admin@voting.com"; // Ganti sesuai email admin Anda
 
+function animateElement(element, animation) {
+  element.style.animation = animation;
+  element.addEventListener(
+    "animationend",
+    () => {
+      element.style.animation = "";
+    },
+    { once: true }
+  );
+}
+
 function handleAuthState() {
   auth.onAuthStateChanged((user) => {
     const loader = document.getElementById("loader");

@@ -1,6 +1,42 @@
 /* Menggunakan font Inter dari Google Fonts */
 body {
   font-family: "Inter", sans-serif;
+  background-color: #f9fafb;
+}
+
+/* Custom gradients and shadows */
+.login-gradient {
+  background: linear-gradient(135deg, #ebf4ff 0%, #ffffff 100%);
+}
+
+.custom-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Input focus ring animation */
+.input-focus-ring {
+  transition: all 0.2s ease;
+}
+
+.input-focus-ring:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  border-color: transparent;
+}
+
+/* Login container animations */
+.login-container-enter {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.login-container-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+enggunakan font Inter dari Google Fonts */ body {
+  font-family: "Inter", sans-serif;
 }
 
 /* Style untuk kartu kandidat yang dipilih */
