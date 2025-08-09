@@ -114,10 +114,25 @@ function loadAdminCandidates() {
     });
 }
 
+// Konfigurasi Cloudinary
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/<dq5znin5d>/upload"; // Ganti <cloud_name>
+const CLOUDINARY_UPLOAD_PRESET = "<upload>"; // Ganti <upload_preset>
+
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const response = await fetch(CLOUDINARY_URL, {
+    method: "POST",
+    body: formData,
+  });
+  return response.json();
+}
+
 if (document.getElementById("add-candidate-form")) {
   document
     .getElementById("add-candidate-form")
-    .addEventListener("submit", function (e) {
+    .addEventListener("submit", async function (e) {
       e.preventDefault();
       const addCandidateError = document.getElementById("add-candidate-error");
       addCandidateError.textContent = "";
@@ -130,27 +145,21 @@ if (document.getElementById("add-candidate-form")) {
         addCandidateError.textContent = "Semua field wajib diisi!";
         return;
       }
-      const storageRef = storage.ref(
-        "candidate_photos/" + Date.now() + "_" + photoFile.name
-      );
-      storageRef
-        .put(photoFile)
-        .then((snapshot) => {
-          return snapshot.ref.getDownloadURL();
-        })
-        .then((photoUrl) => {
-          return db.collection("candidates").add({
-            number: number,
-            name: name,
-            photoUrl: photoUrl,
-          });
-        })
-        .then(() => {
-          document.getElementById("add-candidate-form").reset();
-          loadAdminCandidates();
-        })
-        .catch((err) => {
-          addCandidateError.textContent = "Gagal menambah kandidat.";
+      try {
+        // Upload ke Cloudinary
+        const result = await uploadToCloudinary(photoFile);
+        if (!result.secure_url) throw new Error("Upload gagal");
+        const photoUrl = result.secure_url;
+        // Simpan data kandidat ke Firestore
+        await db.collection("candidates").add({
+          number: number,
+          name: name,
+          photoUrl: photoUrl,
         });
+        document.getElementById("add-candidate-form").reset();
+        loadAdminCandidates();
+      } catch (err) {
+        addCandidateError.textContent = "Gagal menambah kandidat.";
+      }
     });
 }
