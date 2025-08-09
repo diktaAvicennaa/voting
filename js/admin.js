@@ -158,7 +158,7 @@ function loadAdminCandidates() {
           "flex items-center justify-between bg-white p-3 rounded shadow";
         div.innerHTML = `
           <div class="flex items-center space-x-3">
-            <img src="${data.photoUrl || "https://via.placeholder.com/50"}" 
+            <img src="${data.photoUrl || "https://via.placeholder.com/50"}"
                  class="w-12 h-12 rounded-full object-cover border border-blue-200"
                  alt="${data.name}">
             <div>
@@ -256,10 +256,16 @@ if (document.getElementById("add-candidate-form")) {
           .getElementById("candidate-position")
           .value.trim();
         const name = document.getElementById("candidate-name").value.trim();
+        // --- PERBAIKAN --- Mengambil nilai dari input nomor urut
+        const numberInput = document.getElementById("candidate-number").value;
 
-        if (!position || !name || !photoFile) {
+        // --- PERBAIKAN --- Memastikan semua field, termasuk nomor urut, sudah diisi
+        if (!position || !name || !photoFile || !numberInput) {
           throw new Error("Semua field wajib diisi!");
         }
+
+        // --- PERBAIKAN --- Mengubah string menjadi angka (integer)
+        const number = parseInt(numberInput, 10);
 
         // Show loading state
         const submitButton = this.querySelector('button[type="submit"]');
@@ -278,6 +284,7 @@ if (document.getElementById("add-candidate-form")) {
 
         // Save to Firestore
         const docRef = await db.collection("candidates").add({
+          number: number, // --- PERBAIKAN --- Menambahkan field 'number' untuk disimpan
           position: position,
           name: name,
           photoUrl: result.secure_url,
@@ -293,6 +300,8 @@ if (document.getElementById("add-candidate-form")) {
 
         // Refresh candidate list
         loadAdminCandidates();
+        // Refresh chart juga
+        loadVoteChart();
       } catch (err) {
         console.error("Error:", err);
         addCandidateError.textContent =
