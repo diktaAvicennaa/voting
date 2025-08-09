@@ -122,13 +122,30 @@ async function uploadToCloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-  const response = await fetch(CLOUDINARY_URL, {
-    method: "POST",
-    body: formData,
-  });
-  return response.json();
+  // Add these additional parameters
+  formData.append("folder", "voting"); // Save to specific folder
+  formData.append("resource_type", "auto"); // Auto-detect file type
+
+  try {
+    const response = await fetch(CLOUDINARY_URL, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Cloudinary Error:", errorData);
+      throw new Error(errorData.error?.message || "Upload failed");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Upload Error:", error);
+    throw error;
+  }
 }
 
+// Update the form submission handler
 if (document.getElementById("add-candidate-form")) {
   document
     .getElementById("add-candidate-form")
@@ -136,31 +153,60 @@ if (document.getElementById("add-candidate-form")) {
       e.preventDefault();
       const addCandidateError = document.getElementById("add-candidate-error");
       addCandidateError.textContent = "";
-      const number = parseInt(
-        document.getElementById("candidate-number").value
-      );
-      const name = document.getElementById("candidate-name").value.trim();
-      const photoFile = document.getElementById("candidate-photo").files[0];
-      if (!number || !name || !photoFile) {
-        addCandidateError.textContent = "Semua field wajib diisi!";
-        return;
-      }
+
       try {
-        // Upload ke Cloudinary
+        // Validate file type
+        const photoFile = document.getElementById("candidate-photo").files[0];
+        if (photoFile && !photoFile.type.startsWith("image/")) {
+          throw new Error("Please select an image file (JPG, PNG)");
+        }
+
+        const number = parseInt(
+          document.getElementById("candidate-number").value
+        );
+        const name = document.getElementById("candidate-name").value.trim();
+
+        if (!number || !name || !photoFile) {
+          throw new Error("Semua field wajib diisi!");
+        }
+
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Uploading...";
+        }
+
+        // Upload to Cloudinary
         const result = await uploadToCloudinary(photoFile);
-        console.log(result); // Tambahkan log ini
-        if (!result.secure_url) throw new Error("Upload gagal");
-        const photoUrl = result.secure_url;
-        // Simpan data kandidat ke Firestore
+        console.log("Upload result:", result);
+
+        if (!result.secure_url) {
+          throw new Error("Upload gagal: URL tidak ditemukan");
+        }
+
+        // Save to Firestore
         await db.collection("candidates").add({
           number: number,
           name: name,
-          photoUrl: photoUrl,
+          photoUrl: result.secure_url,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        document.getElementById("add-candidate-form").reset();
+
+        // Reset form
+        this.reset();
         loadAdminCandidates();
       } catch (err) {
-        addCandidateError.textContent = "Gagal menambah kandidat.";
+        console.error("Error:", err);
+        addCandidateError.textContent =
+          err.message || "Gagal menambah kandidat.";
+      } finally {
+        // Reset button state
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = "Tambah";
+        }
       }
     });
 }
