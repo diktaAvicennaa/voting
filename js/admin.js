@@ -115,8 +115,8 @@ function loadAdminCandidates() {
 }
 
 // Konfigurasi Cloudinary
-const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/<dq5znin5d>/upload"; // Ganti <cloud_name>
-const CLOUDINARY_UPLOAD_PRESET = "<upload>"; // Ganti <upload_preset>
+const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dq5znin5d/upload";
+const CLOUDINARY_UPLOAD_PRESET = "upload";
 
 async function uploadToCloudinary(file) {
   const formData = new FormData();
