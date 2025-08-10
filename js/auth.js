@@ -27,8 +27,11 @@ function handleAuthState() {
       if (user.email === ADMIN_EMAIL) {
         hide(loginContainer);
         hide(votingContainer);
-        show(adminContainer);
+        show(adminContainer); // Menampilkan halaman admin
         hide(loader);
+
+        loadAdminDashboard(); // <-- TAMBAHKAN BARIS INI
+
         if (adminButton) adminButton.style.display = "block";
       } else {
         hide(loginContainer);
