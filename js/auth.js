@@ -101,6 +101,9 @@ function setupAuthEvents() {
   }
   if (logoutButton) {
     logoutButton.addEventListener("click", () => {
+      // Panggil fungsi reset UI sebelum sign out
+      resetVotingUI();
+
       auth.signOut();
     });
   }
