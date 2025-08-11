@@ -1,16 +1,18 @@
 // Fungsi-fungsi untuk pemilih (tampil kandidat, voting, cek sudah voting)
 // Pastikan sudah load firebase-config.js sebelum file ini
 
+// --- PERBAIKAN ---
+// Fungsi ini dipindahkan ke luar (global scope) agar bisa diakses dari file lain seperti auth.js
+function resetVotingUI() {
+  console.log("Resetting voting UI to default state...");
+  // Memanggil loadCandidates akan membangun ulang daftar kandidat ke kondisi awal yang bersih.
+  loadCandidates();
+}
+
 function loadCandidates() {
   const candidateList = document.getElementById("candidate-list");
   if (!candidateList) return;
-  // Tambahkan fungsi ini di js/voting.js
-  function resetVotingUI() {
-    console.log("Resetting voting UI to default state...");
-    // Cara termudah untuk me-reset UI adalah dengan memanggil kembali fungsi loadCandidates
-    // karena fungsi ini akan membangun ulang seluruh daftar dari awal.
-    loadCandidates();
-  }
+
   candidateList.innerHTML = `
     <div class="text-center py-8">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
