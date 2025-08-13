@@ -1,5 +1,5 @@
 // Logika autentikasi (login, logout, cek admin/pemilih)
-// Pastikan sudah load firebase-config.js sebelum file ini
+// Pastikan sudah load firebase-config.js dan voting.js sebelum file ini
 
 const ADMIN_EMAIL = "admin@voting.com"; // Ganti sesuai email admin Anda
 
@@ -42,15 +42,52 @@ function handleAuthState() {
 }
 
 function showLoginError(message) {
-  //... tidak ada perubahan ...
+  const errorDiv = document.getElementById("login-error");
+  errorDiv.textContent = message;
+  errorDiv.classList.add("error-shake");
+  setTimeout(() => errorDiv.classList.remove("error-shake"), 500);
 }
 
+// FUNGSI INI SUDAH DIPERBAIKI SEPENUHNYA
 function setupAuthEvents() {
   const loginForm = document.getElementById("login-form");
+  const loginError = document.getElementById("login-error");
   const logoutButton = document.getElementById("logout-button");
+  const togglePasswordButton = document.getElementById("toggle-password");
+  const passwordInput = document.getElementById("password");
 
   if (loginForm) {
-    // ... tidak ada perubahan pada event listener form login ...
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const submitBtn = loginForm.querySelector("button[type=submit]");
+
+      // Menyimpan kondisi asli tombol sebelum diubah
+      const originalBtnHTML = submitBtn.innerHTML;
+
+      try {
+        if (loginError) loginError.textContent = "";
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Memproses...</span>
+        `;
+
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (error) {
+        console.error("Login error:", error);
+        showLoginError("ID atau password salah!");
+      } finally {
+        // Mengembalikan tombol ke kondisi semula setelah proses selesai
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHTML;
+      }
+    });
   }
 
   if (logoutButton) {
@@ -60,10 +97,7 @@ function setupAuthEvents() {
     });
   }
 
-  // PENAMBAHAN LOGIKA UNTUK TOMBOL LIHAT PASSWORD
-  const togglePasswordButton = document.getElementById("toggle-password");
-  const passwordInput = document.getElementById("password");
-
+  // Logika untuk tombol lihat/sembunyikan password
   if (togglePasswordButton) {
     togglePasswordButton.addEventListener("click", function () {
       const type =
@@ -71,13 +105,8 @@ function setupAuthEvents() {
       passwordInput.setAttribute("type", type);
 
       const icon = this.querySelector("i");
-      if (type === "password") {
-        icon.classList.remove("fa-eye-slash");
-        icon.classList.add("fa-eye");
-      } else {
-        icon.classList.remove("fa-eye");
-        icon.classList.add("fa-eye-slash");
-      }
+      icon.classList.toggle("fa-eye");
+      icon.classList.toggle("fa-eye-slash");
     });
   }
 }
