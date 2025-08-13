@@ -3,15 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>voting</title>
-    <!-- Memuat Tailwind CSS untuk styling -->
+    <title>Sistem Voting</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Memuat Font Awesome untuk ikon -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <!-- Link ke file CSS kustom -->
     <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,21 +19,34 @@
   </head>
   <body class="bg-gray-100 font-sans">
     <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
-      <!-- KONTEN LOADER -->
       <div id="loader" class="text-center py-12">
         <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
         <p class="mt-4 text-gray-600">Memuat data...</p>
       </div>
 
-      <!-- KONTEN LOGIN -->
       <div id="login-container" class="hidden">
         <div
           class="bg-white p-8 rounded-xl shadow-lg text-center max-w-md mx-auto"
         >
+          <div class="mx-auto mb-4 h-16 w-16 text-blue-500">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
           <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
             Selamat Datang!
           </h1>
-          <p class="text-gray-500 mb-6">
+          <p class="text-gray-500 mb-8">
             Silakan masuk untuk memberikan suara Anda.
           </p>
           <form id="login-form">
@@ -44,15 +54,20 @@
               <label
                 for="email"
                 class="block text-sm font-medium text-gray-700 mb-1"
-                >ID Pemilih </label
+                >ID Pemilih</label
               >
-              <input
-                type="email"
-                id="email"
-                placeholder="contoh: admin@ganteng.com"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </span>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="contoh: user@pemilih.com"
+                  class="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
             </div>
             <div class="mb-6 text-left">
               <label
@@ -60,194 +75,54 @@
                 class="block text-sm font-medium text-gray-700 mb-1"
                 >Password</label
               >
-              <input
-                type="password"
-                id="password"
-                placeholder="••••••••"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                  <i class="fas fa-lock text-gray-400"></i>
+                </span>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="••••••••"
+                  class="w-full pl-10 pr-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+                <button
+                  type="button"
+                  id="toggle-password"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
             </div>
             <button
               type="submit"
-              class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
+              class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center"
             >
-              Masuk
+              <i class="fas fa-sign-in-alt mr-2"></i>
+              <span>Masuk</span>
             </button>
           </form>
           <p id="login-error" class="text-red-500 mt-4 text-sm"></p>
         </div>
       </div>
 
-      <!-- KONTEN VOTING -->
-      <div id="voting-container" class="hidden">
-        <div class="bg-white p-8 rounded-xl shadow-lg">
-          <div class="flex justify-between items-start mb-6">
-            <div>
-              <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
-                Pilih Kandidat Anda
-              </h1>
-              <p id="user-email" class="text-sm text-gray-500 mt-1"></p>
-            </div>
-            <div class="flex items-center space-x-2">
-              <button
-                id="admin-button"
-                class="hidden bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300 text-sm"
-              >
-                <i class="fas fa-user-shield mr-2"></i>Admin
-              </button>
-              <button
-                id="logout-button"
-                class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300 text-sm"
-              >
-                <i class="fas fa-sign-out-alt mr-2"></i>Keluar
-              </button>
-            </div>
-          </div>
-          <div
-            id="candidate-list"
-            class="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            <!-- Daftar kandidat akan dimuat di sini oleh JavaScript -->
-          </div>
-          <div id="message-container" class="mt-6 text-center">
-            <!-- Pesan status akan ditampilkan di sini -->
-          </div>
-        </div>
-      </div>
+      <div id="voting-container" class="hidden"></div>
 
-      <!-- KONTEN ADMIN -->
-      <div id="admin-container" class="hidden">
-        <div class="bg-white p-8 rounded-xl shadow-lg">
-          <div class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
-              Dashboard Admin
-            </h1>
-            <button
-              id="back-to-vote-button"
-              class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-sm"
-            >
-              <i class="fas fa-arrow-left mr-2"></i>Kembali
-            </button>
-          </div>
-
-          <!-- HASIL VOTING & DIAGRAM -->
-          <div class="mb-10">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">
-              Hasil Voting Real-Time
-            </h2>
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <canvas id="voteChart"></canvas>
-            </div>
-          </div>
-
-          <!-- MANAJEMEN KANDIDAT -->
-          <div>
-            <h2 class="text-xl font-bold text-gray-700 mb-4">
-              Manajemen Kandidat
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <!-- Form Tambah Kandidat -->
-              <div class="bg-gray-50 p-6 rounded-lg">
-                <h3 class="font-bold mb-4">Tambah Kandidat Baru</h3>
-                <form id="add-candidate-form" class="space-y-4">
-                  <div>
-                    <label
-                      for="candidate-number"
-                      class="block text-sm font-medium text-gray-700"
-                      >Nomor Urut</label
-                    >
-                    <input
-                      type="number"
-                      id="candidate-number"
-                      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-name"
-                      class="block text-sm font-medium text-gray-700"
-                      >Nama Lengkap</label
-                    >
-                    <input
-                      type="text"
-                      id="candidate-name"
-                      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-position"
-                      class="block text-sm font-medium text-gray-700"
-                      >Jabatan</label
-                    >
-                    <input
-                      type="text"
-                      id="candidate-position"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-photo"
-                      class="block text-sm font-medium text-gray-700"
-                      >Foto Kandidat</label
-                    >
-                    <input
-                      type="file"
-                      id="candidate-photo"
-                      accept="image/*"
-                      required
-                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    id="add-candidate-button"
-                    class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 flex items-center justify-center disabled:bg-gray-400"
-                  >
-                    <i class="fas fa-plus mr-2"></i><span>Tambah</span>
-                  </button>
-                  <p
-                    id="add-candidate-error"
-                    class="text-red-500 text-sm mt-2"
-                  ></p>
-                </form>
-              </div>
-              <!-- Daftar Kandidat Saat Ini -->
-              <div class="bg-gray-50 p-6 rounded-lg">
-                <h3 class="font-bold mb-4">Daftar Kandidat</h3>
-                <div
-                  id="admin-candidate-list"
-                  class="space-y-3 max-h-96 overflow-y-auto"
-                >
-                  <!-- Daftar kandidat admin dimuat di sini -->
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="admin-container" class="hidden"></div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <!-- SDK Baru -->
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SDK Baru -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 
-    <!-- Script Kustom (sudah modular, script.js dihapus) -->
-     <script src="js/firebase-config.js"></script>
+    <script src="js/firebase-config.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/voting.js"></script>  
+    <script src="js/voting.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/main.js"></script>
