@@ -41,7 +41,7 @@ function loadVoteChart() {
               if (count[cid] !== undefined) count[cid]++;
             });
 
-            data.length = 0; // Hapus data lama
+            data.length = 0; // Hapus data lama sebelum diisi ulang
             candidateIds.forEach((id) => data.push(count[id]));
 
             const canvas = document.getElementById("voteChart");
@@ -67,7 +67,7 @@ function loadVoteChart() {
                   {
                     label: "Jumlah Suara",
                     data: data,
-                    backgroundColor: "#60a5fa", // Kembali ke satu warna
+                    backgroundColor: "#60a5fa", // Warna biru standar
                     borderWidth: 1,
                     borderColor: "#2563eb",
                   },
@@ -116,15 +116,86 @@ function loadVoteChart() {
 }
 
 function loadAdminCandidates() {
-  // ... Kode fungsi ini tidak perlu diubah dari versi terakhir ...
+  const adminCandidateList = document.getElementById("admin-candidate-list");
+  if (!adminCandidateList) {
+    console.error("Admin candidate list element not found");
+    return;
+  }
+
+  adminCandidateList.innerHTML =
+    '<div class="text-gray-400">Memuat kandidat...</div>';
+
+  if (!auth.currentUser) {
+    adminCandidateList.innerHTML =
+      '<div class="text-red-500">Error: Anda harus login sebagai admin!</div>';
+    return;
+  }
+
+  db.collection("candidates")
+    .orderBy("number")
+    .onSnapshot(
+      (snapshot) => {
+        if (snapshot.empty) {
+          adminCandidateList.innerHTML =
+            '<div class="text-gray-400">Belum ada kandidat.</div>';
+          return;
+        }
+
+        adminCandidateList.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className =
+            "flex items-center justify-between bg-white p-3 rounded shadow";
+          div.innerHTML = `
+            <div class="flex items-center space-x-3">
+              <img src="${
+                data.photoUrl || "https://via.placeholder.com/50"
+              }" class="w-12 h-12 rounded-full object-cover border border-blue-200" alt="${
+            data.name
+          }">
+              <div>
+                <div class="font-bold">${data.name}</div>
+                <div class="text-xs text-gray-500">Jabatan: ${
+                  data.position
+                }</div>
+              </div>
+            </div>
+            <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
+              doc.id
+            }">
+              <i class="fas fa-trash"></i>
+            </button>
+          `;
+          adminCandidateList.appendChild(div);
+        });
+
+        document.querySelectorAll(".delete-candidate-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const id = this.getAttribute("data-id");
+            if (confirm("Yakin hapus kandidat ini?")) {
+              db.collection("candidates")
+                .doc(id)
+                .delete()
+                .catch((error) => {
+                  console.error("Error deleting:", error);
+                  alert("Gagal menghapus kandidat: " + error.message);
+                });
+            }
+          });
+        });
+      },
+      (error) => {
+        console.error("Error listening to candidates:", error);
+        adminCandidateList.innerHTML =
+          '<div class="text-red-500">Error: Gagal memuat kandidat!</div>';
+      }
+    );
 }
 
 function addResetVotesButton() {
   const adminControls = document.querySelector("#admin-container .mb-10");
-  if (!adminControls) return;
-
-  // Cek sederhana agar tidak duplikat jika loadAdminDashboard terpanggil lagi
-  if (adminControls.querySelector("#reset-votes-btn")) return;
+  if (!adminControls || document.getElementById("reset-votes-btn")) return;
 
   const resetButton = document.createElement("button");
   resetButton.id = "reset-votes-btn";
@@ -132,26 +203,20 @@ function addResetVotesButton() {
     "mt-4 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 text-sm";
   resetButton.innerHTML =
     '<i class="fas fa-trash-alt mr-2"></i>Reset Semua Suara';
-
   resetButton.addEventListener("click", resetAllVotes);
   adminControls.appendChild(resetButton);
 }
 
 function addVotingDetails() {
   const adminControls = document.querySelector("#admin-container .mb-10");
-  if (!adminControls) return;
-
-  // Cek sederhana agar tidak duplikat
-  if (adminControls.querySelector("#detail-pemilih-btn")) return;
+  if (!adminControls || document.getElementById("detail-pemilih-btn")) return;
 
   const detailsButton = document.createElement("button");
   detailsButton.id = "detail-pemilih-btn";
   detailsButton.className =
     "ml-4 mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-sm";
   detailsButton.innerHTML = '<i class="fas fa-list mr-2"></i>Detail Pemilih';
-
   detailsButton.addEventListener("click", showVotingDetails);
   adminControls.appendChild(detailsButton);
 }
-
-// ... Sisanya (uploadToCloudinary, form submit, resetAllVotes, showVotingDetails) tidak ada perubahan ...
+// ... (fungsi-fungsi lainnya tidak perlu diubah)

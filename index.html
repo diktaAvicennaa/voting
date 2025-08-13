@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistem Voting </title>
+    <title>Sistem Voting Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
@@ -19,61 +19,6 @@
   </head>
   <body class="bg-gray-100 font-sans">
     <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
-      <div id="loader" class="text-center py-12">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-        <p class="mt-4 text-gray-600">Memuat data...</p>
-      </div>
-
-      <div id="login-container" class="hidden">
-        <div
-          class="bg-white p-8 rounded-xl shadow-lg text-center max-w-md mx-auto"
-        >
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-            Selamat Datang!
-          </h1>
-          <p class="text-gray-500 mb-6">
-            Silakan masuk untuk memberikan suara Anda.
-          </p>
-          <form id="login-form">
-            <div class="mb-4 text-left">
-              <label
-                for="email"
-                class="block text-sm font-medium text-gray-700 mb-1"
-                >ID Pemilih</label
-              >
-              <input
-                type="email"
-                id="email"
-                placeholder="contoh: admin@voting.com"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            <div class="mb-6 text-left">
-              <label
-                for="password"
-                class="block text-sm font-medium text-gray-700 mb-1"
-                >Password</label
-              >
-              <input
-                type="password"
-                id="password"
-                placeholder="••••••••"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300"
-            >
-              Masuk
-            </button>
-          </form>
-          <p id="login-error" class="text-red-500 mt-4 text-sm"></p>
-        </div>
-      </div>
-
       <div id="voting-container" class="hidden">
         <div class="bg-white p-8 rounded-xl shadow-lg">
           <div class="flex justify-between items-start mb-6">
@@ -131,91 +76,7 @@
             </div>
           </div>
 
-          <div>
-            <h2 class="text-xl font-bold text-gray-700 mb-4">
-              Manajemen Kandidat
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div class="bg-gray-50 p-6 rounded-lg">
-                <h3 class="font-bold mb-4">Tambah Kandidat Baru</h3>
-                <form id="add-candidate-form" class="space-y-4">
-                  <div>
-                    <label
-                      for="candidate-number"
-                      class="block text-sm font-medium text-gray-700"
-                      >Nomor Urut</label
-                    >
-                    <input
-                      type="number"
-                      id="candidate-number"
-                      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-name"
-                      class="block text-sm font-medium text-gray-700"
-                      >Nama Lengkap</label
-                    >
-                    <input
-                      type="text"
-                      id="candidate-name"
-                      class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-position"
-                      class="block text-sm font-medium text-gray-700"
-                      >Jabatan</label
-                    >
-                    <input
-                      type="text"
-                      id="candidate-position"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="candidate-photo"
-                      class="block text-sm font-medium text-gray-700"
-                      >Foto Kandidat</label
-                    >
-                    <input
-                      type="file"
-                      id="candidate-photo"
-                      accept="image/*"
-                      required
-                      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    id="add-candidate-button"
-                    class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 flex items-center justify-center disabled:bg-gray-400"
-                  >
-                    <i class="fas fa-plus mr-2"></i><span>Tambah</span>
-                  </button>
-                  <p
-                    id="add-candidate-error"
-                    class="text-red-500 text-sm mt-2"
-                  ></p>
-                </form>
-              </div>
-              <div class="bg-gray-50 p-6 rounded-lg">
-                <h3 class="font-bold mb-4">Daftar Kandidat</h3>
-                <div
-                  id="admin-candidate-list"
-                  class="space-y-3 max-h-96 overflow-y-auto"
-                >
-                  </div>
-              </div>
-            </div>
           </div>
-        </div>
       </div>
     </div>
 
@@ -225,6 +86,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="js/firebase-config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/voting.js"></script>
