@@ -9,6 +9,7 @@ function loadAdminDashboard() {
   addVotingDetails();
 }
 
+// Ganti seluruh fungsi loadVoteChart Anda dengan yang ini
 function loadVoteChart() {
   console.log("Loading vote chart...");
 
@@ -17,8 +18,6 @@ function loadVoteChart() {
     return;
   }
 
-  // --- PERUBAHAN UNTUK CHART ---
-  // Chart juga diubah menjadi real-time agar selalu sinkron
   db.collection("candidates")
     .orderBy("number")
     .onSnapshot(
@@ -58,7 +57,10 @@ function loadVoteChart() {
             }
 
             const ctx = canvas.getContext("2d");
-            if (window.voteChart) {
+
+            // --- PERBAIKAN DI SINI ---
+            // Cek lebih aman: pastikan window.voteChart ada DAN memiliki fungsi destroy
+            if (window.voteChart && typeof window.voteChart.destroy === 'function') {
               console.log("Destroying old chart");
               window.voteChart.destroy();
             }
@@ -120,7 +122,6 @@ function loadVoteChart() {
       }
     );
 }
-
 // --- FUNGSI INI SEPENUHNYA DIGANTI ---
 function loadAdminCandidates() {
   console.log("Loading admin candidates with real-time listener...");
