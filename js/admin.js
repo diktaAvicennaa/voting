@@ -114,7 +114,10 @@ function loadVoteChart() {
             if (!canvas) return;
 
             const ctx = canvas.getContext("2d");
-            if (window.voteChart) {
+            if (
+              window.voteChart &&
+              typeof window.voteChart.destroy === "function"
+            ) {
               window.voteChart.destroy();
             }
 
