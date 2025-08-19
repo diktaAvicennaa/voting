@@ -21,7 +21,7 @@ function loadCandidates() {
   `;
 
   db.collection("candidates")
-    .orderBy("position")
+    .orderBy("number")
     .get()
     .then((snapshot) => {
       if (snapshot.empty) {

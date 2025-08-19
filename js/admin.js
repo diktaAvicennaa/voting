@@ -1,12 +1,13 @@
 // js/admin.js
 
 // --- KONFIGURASI CLOUDINARY ANDA ---
-// Ganti dengan Cloud Name dan Upload Preset dari akun Cloudinary Anda
-const CLOUDINARY_CLOUD_NAME = "dq5znin5d"; // <-- GANTI INI
-const CLOUDINARY_UPLOAD_PRESET = "upload"; // <-- GANTI INI
-const CLOUDINARY_URL = `cloudinary://<571739949781148>:<GkPsKhGR-dBq06vf0ZlVB17h0k0>@dq5znin5d`;
+// Pastikan Cloud Name dan Upload Preset Anda sudah benar.
+const CLOUDINARY_CLOUD_NAME = "dq5znin5d"; // Cloud Name Anda
+const CLOUDINARY_UPLOAD_PRESET = "upload"; // Upload Preset Anda
 
-// -----------------------------------------
+// --- PERBAIKAN: URL INI TELAH DIGANTI KE FORMAT YANG BENAR ---
+const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+// -----------------------------------------------------------
 
 function loadAdminDashboard() {
   console.log("Loading admin dashboard...");
@@ -17,7 +18,6 @@ function loadAdminDashboard() {
   setupAddCandidateForm();
 }
 
-// --- FUNGSI INI SUDAH DIUBAH TOTAL UNTUK CLOUDINARY ---
 function setupAddCandidateForm() {
   const addCandidateForm = document.getElementById("add-candidate-form");
   if (!addCandidateForm) return;
@@ -47,7 +47,6 @@ function setupAddCandidateForm() {
       '<i class="fas fa-spinner fa-spin mr-2"></i>Mengunggah foto...';
     errorMessage.textContent = "";
 
-    // 1. Unggah foto ke Cloudinary
     const formData = new FormData();
     formData.append("file", photoFile);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -59,13 +58,15 @@ function setupAddCandidateForm() {
       });
 
       if (!response.ok) {
-        throw new Error("Gagal mengunggah foto ke Cloudinary.");
+        const errorData = await response.json();
+        throw new Error(
+          `Gagal unggah ke Cloudinary: ${errorData.error.message}`
+        );
       }
 
       const data = await response.json();
-      const photoUrl = data.secure_url; // URL foto dari Cloudinary
+      const photoUrl = data.secure_url;
 
-      // 2. Simpan data ke Firestore setelah foto berhasil diunggah
       addButton.innerHTML =
         '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan data...';
 
@@ -73,16 +74,14 @@ function setupAddCandidateForm() {
         number: parseInt(number, 10),
         name: name,
         position: position,
-        photoUrl: photoUrl, // Simpan URL dari Cloudinary
+        photoUrl: photoUrl,
       });
 
-      // Reset form jika berhasil
       addCandidateForm.reset();
     } catch (error) {
       console.error("Proses tambah kandidat gagal:", error);
       errorMessage.textContent = "Gagal menambahkan kandidat. " + error.message;
     } finally {
-      // Kembalikan tombol ke keadaan semula
       addButton.disabled = false;
       addButton.innerHTML =
         '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
@@ -226,31 +225,6 @@ function loadAdminCandidates() {
     );
 }
 
-function addResetVotesButton() {
-  const adminControls = document.querySelector("#admin-container .mb-10");
-  if (!adminControls || document.getElementById("reset-votes-btn")) return;
-  const resetButton = document.createElement("button");
-  resetButton.id = "reset-votes-btn";
-  resetButton.className =
-    "mt-4 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 text-sm";
-  resetButton.innerHTML =
-    '<i class="fas fa-trash-alt mr-2"></i>Reset Semua Suara';
-  resetButton.addEventListener("click", resetAllVotes);
-  adminControls.appendChild(resetButton);
-}
-
-function addVotingDetails() {
-  const adminControls = document.querySelector("#admin-container .mb-10");
-  if (!adminControls || document.getElementById("detail-pemilih-btn")) return;
-  const detailsButton = document.createElement("button");
-  detailsButton.id = "detail-pemilih-btn";
-  detailsButton.className =
-    "ml-4 mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-sm";
-  detailsButton.innerHTML = '<i class="fas fa-list mr-2"></i>Detail Pemilih';
-  detailsButton.addEventListener("click", showVotingDetails);
-  adminControls.appendChild(detailsButton);
-}
-
 async function resetAllVotes() {
   if (
     !confirm(
@@ -271,6 +245,7 @@ async function resetAllVotes() {
     alert("Berhasil! Semua data suara telah direset.");
   } catch (error) {
     alert("Gagal mereset suara. Lihat console untuk detail.");
+    console.error("Error resetting votes:", error);
   }
 }
 
@@ -342,7 +317,33 @@ async function showVotingDetails() {
         </tbody>
       </table>`;
   } catch (error) {
+    console.error("Error fetching vote details:", error);
     detailsContainer.querySelector("#voter-list-content").innerHTML =
       "<p class='text-red-500'>Gagal memuat detail.</p>";
   }
+}
+
+function addResetVotesButton() {
+  const adminControls = document.querySelector("#admin-container .mb-10");
+  if (!adminControls || document.getElementById("reset-votes-btn")) return;
+  const resetButton = document.createElement("button");
+  resetButton.id = "reset-votes-btn";
+  resetButton.className =
+    "mt-4 bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 text-sm";
+  resetButton.innerHTML =
+    '<i class="fas fa-trash-alt mr-2"></i>Reset Semua Suara';
+  resetButton.addEventListener("click", resetAllVotes);
+  adminControls.appendChild(resetButton);
+}
+
+function addVotingDetails() {
+  const adminControls = document.querySelector("#admin-container .mb-10");
+  if (!adminControls || document.getElementById("detail-pemilih-btn")) return;
+  const detailsButton = document.createElement("button");
+  detailsButton.id = "detail-pemilih-btn";
+  detailsButton.className =
+    "ml-4 mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 text-sm";
+  detailsButton.innerHTML = '<i class="fas fa-list mr-2"></i>Detail Pemilih';
+  detailsButton.addEventListener("click", showVotingDetails);
+  adminControls.appendChild(detailsButton);
 }
