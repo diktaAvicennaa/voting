@@ -7,6 +7,76 @@ function loadAdminDashboard() {
   loadAdminCandidates();
   addResetVotesButton();
   addVotingDetails();
+  setupAddCandidateForm(); // Panggil fungsi untuk form di sini
+}
+
+function setupAddCandidateForm() {
+  const addCandidateForm = document.getElementById("add-candidate-form");
+  if (addCandidateForm) {
+    addCandidateForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const number = document.getElementById("candidate-number").value;
+      const name = document.getElementById("candidate-name").value;
+      const position = document.getElementById("candidate-position").value;
+      const photo = document.getElementById("candidate-photo").files[0];
+      const addButton = document.getElementById("add-candidate-button");
+      const errorMessage = document.getElementById("add-candidate-error");
+
+      if (!photo) {
+        errorMessage.textContent = "Foto kandidat harus diisi.";
+        return;
+      }
+
+      addButton.disabled = true;
+      addButton.innerHTML =
+        '<i class="fas fa-spinner fa-spin mr-2"></i>Menambahkan...';
+      errorMessage.textContent = "";
+
+      const storageRef = storage.ref(
+        `candidate-photos/${Date.now()}_${photo.name}`
+      );
+      const uploadTask = storageRef.put(photo);
+
+      uploadTask.on(
+        "state_changed",
+        null, // No need for progress tracking in this case
+        (error) => {
+          console.error("Upload failed:", error);
+          errorMessage.textContent = "Gagal mengunggah foto: " + error.message;
+          addButton.disabled = false;
+          addButton.innerHTML =
+            '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
+        },
+        () => {
+          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            db.collection("candidates")
+              .add({
+                number: parseInt(number, 10),
+                name: name,
+                position: position,
+                photoUrl: downloadURL,
+              })
+              .then(() => {
+                addCandidateForm.reset();
+                addButton.disabled = false;
+                addButton.innerHTML =
+                  '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
+                // Kandidat akan otomatis muncul karena onSnapshot
+              })
+              .catch((error) => {
+                console.error("Error adding candidate:", error);
+                errorMessage.textContent =
+                  "Gagal menambahkan kandidat: " + error.message;
+                addButton.disabled = false;
+                addButton.innerHTML =
+                  '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
+              });
+          });
+        }
+      );
+    });
+  }
 }
 
 function loadVoteChart() {
