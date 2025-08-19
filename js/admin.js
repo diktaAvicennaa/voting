@@ -1,5 +1,12 @@
-// Fungsi-fungsi admin (tambah/hapus kandidat, tampil kandidat admin, chart hasil voting)
-// Pastikan sudah load firebase-config.js sebelum file ini
+// js/admin.js
+
+// --- KONFIGURASI CLOUDINARY ANDA ---
+// Ganti dengan Cloud Name dan Upload Preset dari akun Cloudinary Anda
+const CLOUDINARY_CLOUD_NAME = "dq5znin5d"; // <-- GANTI INI
+const CLOUDINARY_UPLOAD_PRESET = "upload"; // <-- GANTI INI
+const CLOUDINARY_URL = `cloudinary://<571739949781148>:<GkPsKhGR-dBq06vf0ZlVB17h0k0>@dq5znin5d`;
+
+// -----------------------------------------
 
 function loadAdminDashboard() {
   console.log("Loading admin dashboard...");
@@ -7,125 +14,108 @@ function loadAdminDashboard() {
   loadAdminCandidates();
   addResetVotesButton();
   addVotingDetails();
-  setupAddCandidateForm(); // Panggil fungsi untuk form di sini
+  setupAddCandidateForm();
 }
 
+// --- FUNGSI INI SUDAH DIUBAH TOTAL UNTUK CLOUDINARY ---
 function setupAddCandidateForm() {
   const addCandidateForm = document.getElementById("add-candidate-form");
-  if (addCandidateForm) {
-    addCandidateForm.addEventListener("submit", function (e) {
-      e.preventDefault();
+  if (!addCandidateForm) return;
 
-      const number = document.getElementById("candidate-number").value;
-      const name = document.getElementById("candidate-name").value;
-      const position = document.getElementById("candidate-position").value;
-      const photo = document.getElementById("candidate-photo").files[0];
-      const addButton = document.getElementById("add-candidate-button");
-      const errorMessage = document.getElementById("add-candidate-error");
+  addCandidateForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-      if (!photo) {
-        errorMessage.textContent = "Foto kandidat harus diisi.";
-        return;
+    const number = document.getElementById("candidate-number").value;
+    const name = document.getElementById("candidate-name").value;
+    const position = document.getElementById("candidate-position").value;
+    const photoFile = document.getElementById("candidate-photo").files[0];
+    const addButton = document.getElementById("add-candidate-button");
+    const errorMessage = document.getElementById("add-candidate-error");
+
+    if (!photoFile) {
+      errorMessage.textContent = "Foto kandidat harus diisi.";
+      return;
+    }
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      errorMessage.textContent =
+        "Konfigurasi Cloudinary belum diisi di js/admin.js";
+      return;
+    }
+
+    addButton.disabled = true;
+    addButton.innerHTML =
+      '<i class="fas fa-spinner fa-spin mr-2"></i>Mengunggah foto...';
+    errorMessage.textContent = "";
+
+    // 1. Unggah foto ke Cloudinary
+    const formData = new FormData();
+    formData.append("file", photoFile);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(CLOUDINARY_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal mengunggah foto ke Cloudinary.");
       }
 
-      addButton.disabled = true;
+      const data = await response.json();
+      const photoUrl = data.secure_url; // URL foto dari Cloudinary
+
+      // 2. Simpan data ke Firestore setelah foto berhasil diunggah
       addButton.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-2"></i>Menambahkan...';
-      errorMessage.textContent = "";
+        '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan data...';
 
-      const storageRef = storage.ref(
-        `candidate-photos/${Date.now()}_${photo.name}`
-      );
-      const uploadTask = storageRef.put(photo);
+      await db.collection("candidates").add({
+        number: parseInt(number, 10),
+        name: name,
+        position: position,
+        photoUrl: photoUrl, // Simpan URL dari Cloudinary
+      });
 
-      uploadTask.on(
-        "state_changed",
-        null, // No need for progress tracking in this case
-        (error) => {
-          console.error("Upload failed:", error);
-          errorMessage.textContent = "Gagal mengunggah foto: " + error.message;
-          addButton.disabled = false;
-          addButton.innerHTML =
-            '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
-        },
-        () => {
-          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-            db.collection("candidates")
-              .add({
-                number: parseInt(number, 10),
-                name: name,
-                position: position,
-                photoUrl: downloadURL,
-              })
-              .then(() => {
-                addCandidateForm.reset();
-                addButton.disabled = false;
-                addButton.innerHTML =
-                  '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
-                // Kandidat akan otomatis muncul karena onSnapshot
-              })
-              .catch((error) => {
-                console.error("Error adding candidate:", error);
-                errorMessage.textContent =
-                  "Gagal menambahkan kandidat: " + error.message;
-                addButton.disabled = false;
-                addButton.innerHTML =
-                  '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
-              });
-          });
-        }
-      );
-    });
-  }
+      // Reset form jika berhasil
+      addCandidateForm.reset();
+    } catch (error) {
+      console.error("Proses tambah kandidat gagal:", error);
+      errorMessage.textContent = "Gagal menambahkan kandidat. " + error.message;
+    } finally {
+      // Kembalikan tombol ke keadaan semula
+      addButton.disabled = false;
+      addButton.innerHTML =
+        '<i class="fas fa-plus mr-2"></i><span>Tambah</span>';
+    }
+  });
 }
 
 function loadVoteChart() {
-  console.log("Loading vote chart...");
-
-  if (!auth.currentUser) {
-    console.error("User not authenticated");
-    return;
-  }
+  if (!auth.currentUser) return;
 
   db.collection("candidates")
     .orderBy("number")
     .onSnapshot(
       (snapshot) => {
-        const labels = [];
-        const data = [];
-        const candidateIds = [];
-
-        snapshot.forEach((doc) => {
-          const d = doc.data();
-          labels.push(d.name);
-          candidateIds.push(doc.id);
-        });
+        const labels = snapshot.docs.map((doc) => doc.data().name);
+        const candidateIds = snapshot.docs.map((doc) => doc.id);
 
         db.collection("votes").onSnapshot(
           (voteSnap) => {
-            const count = {};
-            candidateIds.forEach((id) => (count[id] = 0));
-
+            const voteCounts = new Map(candidateIds.map((id) => [id, 0]));
             voteSnap.forEach((voteDoc) => {
               const cid = voteDoc.data().candidateId;
-              if (count[cid] !== undefined) count[cid]++;
+              if (voteCounts.has(cid)) {
+                voteCounts.set(cid, voteCounts.get(cid) + 1);
+              }
             });
 
-            data.length = 0; // Hapus data lama sebelum diisi ulang
-            candidateIds.forEach((id) => data.push(count[id]));
-
+            const data = candidateIds.map((id) => voteCounts.get(id));
             const canvas = document.getElementById("voteChart");
-            if (!canvas) {
-              console.error("Canvas element not found!");
-              return;
-            }
+            if (!canvas) return;
 
             const ctx = canvas.getContext("2d");
-
-            if (
-              window.voteChart &&
-              typeof window.voteChart.destroy === "function"
-            ) {
+            if (window.voteChart) {
               window.voteChart.destroy();
             }
 
@@ -137,64 +127,43 @@ function loadVoteChart() {
                   {
                     label: "Jumlah Suara",
                     data: data,
-                    backgroundColor: "#60a5fa", // Warna biru standar
-                    borderWidth: 1,
+                    backgroundColor: "#60a5fa",
                     borderColor: "#2563eb",
+                    borderWidth: 1,
                   },
                 ],
               },
               options: {
                 responsive: true,
                 plugins: {
-                  legend: {
-                    position: "top",
-                  },
+                  legend: { position: "top" },
                   title: {
                     display: true,
                     text: "Hasil Perolehan Suara",
-                    font: {
-                      size: 16,
-                    },
+                    font: { size: 16 },
                   },
                 },
                 scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      stepSize: 1,
-                    },
-                  },
-                  x: {
-                    title: {
-                      display: true,
-                      text: "Nama Kandidat",
-                    },
-                  },
+                  y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                  x: { title: { display: true, text: "Nama Kandidat" } },
                 },
               },
             });
           },
-          (error) => {
-            console.error("Error listening to votes for chart:", error);
-          }
+          (error) => console.error("Error listening to votes for chart:", error)
         );
       },
-      (error) => {
-        console.error("Error listening to candidates for chart:", error);
-      }
+      (error) =>
+        console.error("Error listening to candidates for chart:", error)
     );
 }
 
 function loadAdminCandidates() {
   const adminCandidateList = document.getElementById("admin-candidate-list");
-  if (!adminCandidateList) {
-    console.error("Admin candidate list element not found");
-    return;
-  }
+  if (!adminCandidateList) return;
 
   adminCandidateList.innerHTML =
     '<div class="text-gray-400">Memuat kandidat...</div>';
-
   if (!auth.currentUser) {
     adminCandidateList.innerHTML =
       '<div class="text-red-500">Error: Anda harus login sebagai admin!</div>';
@@ -210,7 +179,6 @@ function loadAdminCandidates() {
             '<div class="text-gray-400">Belum ada kandidat.</div>';
           return;
         }
-
         adminCandidateList.innerHTML = "";
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -218,25 +186,22 @@ function loadAdminCandidates() {
           div.className =
             "flex items-center justify-between bg-white p-3 rounded shadow";
           div.innerHTML = `
-            <div class="flex items-center space-x-3">
-              <img src="${
-                data.photoUrl || "https://via.placeholder.com/50"
-              }" class="w-12 h-12 rounded-full object-cover border border-blue-200" alt="${
+          <div class="flex items-center space-x-3">
+            <img src="${
+              data.photoUrl || "https://via.placeholder.com/50"
+            }" class="w-12 h-12 rounded-full object-cover border" alt="${
             data.name
           }">
-              <div>
-                <div class="font-bold">${data.name}</div>
-                <div class="text-xs text-gray-500">Jabatan: ${
-                  data.position
-                }</div>
-              </div>
+            <div>
+              <div class="font-bold">${data.name}</div>
+              <div class="text-xs text-gray-500">Jabatan: ${data.position}</div>
             </div>
-            <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
-              doc.id
-            }">
-              <i class="fas fa-trash"></i>
-            </button>
-          `;
+          </div>
+          <button class="delete-candidate-btn text-red-500 hover:text-red-700" data-id="${
+            doc.id
+          }">
+            <i class="fas fa-trash"></i>
+          </button>`;
           adminCandidateList.appendChild(div);
         });
 
@@ -247,16 +212,14 @@ function loadAdminCandidates() {
               db.collection("candidates")
                 .doc(id)
                 .delete()
-                .catch((error) => {
-                  console.error("Error deleting:", error);
-                  alert("Gagal menghapus kandidat: " + error.message);
-                });
+                .catch((error) =>
+                  alert("Gagal menghapus kandidat: " + error.message)
+                );
             }
           });
         });
       },
       (error) => {
-        console.error("Error listening to candidates:", error);
         adminCandidateList.innerHTML =
           '<div class="text-red-500">Error: Gagal memuat kandidat!</div>';
       }
@@ -266,7 +229,6 @@ function loadAdminCandidates() {
 function addResetVotesButton() {
   const adminControls = document.querySelector("#admin-container .mb-10");
   if (!adminControls || document.getElementById("reset-votes-btn")) return;
-
   const resetButton = document.createElement("button");
   resetButton.id = "reset-votes-btn";
   resetButton.className =
@@ -280,7 +242,6 @@ function addResetVotesButton() {
 function addVotingDetails() {
   const adminControls = document.querySelector("#admin-container .mb-10");
   if (!adminControls || document.getElementById("detail-pemilih-btn")) return;
-
   const detailsButton = document.createElement("button");
   detailsButton.id = "detail-pemilih-btn";
   detailsButton.className =
@@ -289,4 +250,99 @@ function addVotingDetails() {
   detailsButton.addEventListener("click", showVotingDetails);
   adminControls.appendChild(detailsButton);
 }
-// ... (fungsi-fungsi lainnya tidak perlu diubah)
+
+async function resetAllVotes() {
+  if (
+    !confirm(
+      "APAKAH ANDA YAKIN? Tindakan ini akan menghapus SEMUA data suara secara permanen."
+    )
+  )
+    return;
+  const votesCollection = db.collection("votes");
+  try {
+    const snapshot = await votesCollection.get();
+    if (snapshot.empty) {
+      alert("Tidak ada data suara untuk dihapus.");
+      return;
+    }
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    alert("Berhasil! Semua data suara telah direset.");
+  } catch (error) {
+    alert("Gagal mereset suara. Lihat console untuk detail.");
+  }
+}
+
+async function showVotingDetails() {
+  const detailsContainer = document.createElement("div");
+  detailsContainer.className =
+    "fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50";
+  detailsContainer.innerHTML = `
+    <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 max-w-2xl max-h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">Detail Pemilih</h2>
+        <button id="close-details" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+      </div>
+      <div id="voter-list-content" class="overflow-y-auto">
+        <p>Memuat data...</p>
+      </div>
+    </div>`;
+  document.body.appendChild(detailsContainer);
+
+  const close = () => detailsContainer.remove();
+  detailsContainer
+    .querySelector("#close-details")
+    .addEventListener("click", close);
+  detailsContainer.addEventListener("click", (e) => {
+    if (e.target === detailsContainer) close();
+  });
+
+  try {
+    const [votesSnapshot, candidatesSnapshot] = await Promise.all([
+      db.collection("votes").orderBy("timestamp", "desc").get(),
+      db.collection("candidates").get(),
+    ]);
+    const candidatesMap = new Map(
+      candidatesSnapshot.docs.map((doc) => [doc.id, doc.data().name])
+    );
+    const listContent = detailsContainer.querySelector("#voter-list-content");
+
+    if (votesSnapshot.empty) {
+      listContent.innerHTML = "<p>Belum ada yang memberikan suara.</p>";
+      return;
+    }
+    listContent.innerHTML = `
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr>
+            <th class="border-b-2 p-2 bg-gray-100">Email Pemilih</th>
+            <th class="border-b-2 p-2 bg-gray-100">Memilih Kandidat</th>
+            <th class="border-b-2 p-2 bg-gray-100">Waktu</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${votesSnapshot.docs
+            .map((doc) => {
+              const vote = doc.data();
+              return `
+              <tr>
+                <td class="border-b p-2">${vote.userEmail}</td>
+                <td class="border-b p-2">${
+                  candidatesMap.get(vote.candidateId) || "N/A"
+                }</td>
+                <td class="border-b p-2">${
+                  vote.timestamp
+                    ? vote.timestamp.toDate().toLocaleString("id-ID")
+                    : "N/A"
+                }</td>
+              </tr>`;
+            })
+            .join("")}
+        </tbody>
+      </table>`;
+  } catch (error) {
+    detailsContainer.querySelector("#voter-list-content").innerHTML =
+      "<p class='text-red-500'>Gagal memuat detail.</p>";
+  }
+}
