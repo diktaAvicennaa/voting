@@ -1,4 +1,4 @@
-// js/main.js (Dengan Perbaikan Final)
+// js/main.js (VERSI FINAL YANG BENAR)
 
 document.addEventListener("DOMContentLoaded", function () {
   // Setup event dan auth listener
@@ -24,5 +24,5 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Blok kode yang menyebabkan error sebelumnya sudah dihapus dari sini.
+  // Blok kode yang memicu error sebelumnya sudah dihapus dari sini.
 });

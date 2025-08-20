@@ -1,4 +1,4 @@
-// js/auth.js (Dengan Perbaikan Final)
+// js/auth.js (VERSI FINAL YANG BENAR)
 
 const ADMIN_EMAIL = "admin@voting.com"; // Ganti sesuai email admin Anda
 
@@ -27,8 +27,7 @@ function handleAuthState() {
         if (userEmail) userEmail.textContent = user.email;
         if (adminButton) adminButton.style.display = "none";
 
-        // --- INI ADALAH PERBAIKAN UTAMA ---
-        // Kandidat dimuat HANYA SETELAH login pemilih terverifikasi.
+        // --- INI PERBAIKANNYA: Kandidat dimuat SETELAH login pemilih dikonfirmasi ---
         loadCandidates();
       }
     } else {
@@ -41,6 +40,8 @@ function handleAuthState() {
   });
 }
 
+// ... Sisa dari file ini (fungsi showLoginError dan setupAuthEvents) tidak perlu diubah ...
+
 function showLoginError(message) {
   const errorDiv = document.getElementById("login-error");
   errorDiv.textContent = message;
@@ -50,7 +51,6 @@ function showLoginError(message) {
 
 function setupAuthEvents() {
   const loginForm = document.getElementById("login-form");
-  // ... (sisa kode di fungsi ini tidak perlu diubah, biarkan seperti semula)
   const loginError = document.getElementById("login-error");
   const logoutButton = document.getElementById("logout-button");
   const togglePasswordButton = document.getElementById("toggle-password");
@@ -63,7 +63,6 @@ function setupAuthEvents() {
       const password = document.getElementById("password").value;
       const submitBtn = loginForm.querySelector("button[type=submit]");
       const originalBtnHTML = submitBtn.innerHTML;
-
       try {
         if (loginError) loginError.textContent = "";
         submitBtn.disabled = true;
@@ -78,14 +77,12 @@ function setupAuthEvents() {
       }
     });
   }
-
   if (logoutButton) {
     logoutButton.addEventListener("click", () => {
       resetVotingUI();
       auth.signOut();
     });
   }
-
   if (togglePasswordButton) {
     togglePasswordButton.addEventListener("click", function () {
       const type =
