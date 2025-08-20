@@ -1,5 +1,4 @@
-// Logika autentikasi (login, logout, cek admin/pemilih)
-// Pastikan sudah load firebase-config.js dan voting.js sebelum file ini
+// js/auth.js (Dengan Perbaikan Final)
 
 const ADMIN_EMAIL = "admin@voting.com"; // Ganti sesuai email admin Anda
 
@@ -18,10 +17,7 @@ function handleAuthState() {
         hide(votingContainer);
         show(adminContainer);
         hide(loader);
-
-        // Memastikan dashboard dimuat saat admin login
         loadAdminDashboard();
-
         if (adminButton) adminButton.style.display = "block";
       } else {
         hide(loginContainer);
@@ -30,6 +26,10 @@ function handleAuthState() {
         hide(loader);
         if (userEmail) userEmail.textContent = user.email;
         if (adminButton) adminButton.style.display = "none";
+
+        // --- INI ADALAH PERBAIKAN UTAMA ---
+        // Kandidat dimuat HANYA SETELAH login pemilih terverifikasi.
+        loadCandidates();
       }
     } else {
       show(loginContainer);
@@ -48,9 +48,9 @@ function showLoginError(message) {
   setTimeout(() => errorDiv.classList.remove("error-shake"), 500);
 }
 
-// FUNGSI INI SUDAH DIPERBAIKI SEPENUHNYA
 function setupAuthEvents() {
   const loginForm = document.getElementById("login-form");
+  // ... (sisa kode di fungsi ini tidak perlu diubah, biarkan seperti semula)
   const loginError = document.getElementById("login-error");
   const logoutButton = document.getElementById("logout-button");
   const togglePasswordButton = document.getElementById("toggle-password");
@@ -59,31 +59,20 @@ function setupAuthEvents() {
   if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
       const submitBtn = loginForm.querySelector("button[type=submit]");
-
-      // Menyimpan kondisi asli tombol sebelum diubah
       const originalBtnHTML = submitBtn.innerHTML;
 
       try {
         if (loginError) loginError.textContent = "";
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-          <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Memproses...</span>
-        `;
-
+        submitBtn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Memproses...</span>`;
         await auth.signInWithEmailAndPassword(email, password);
       } catch (error) {
         console.error("Login error:", error);
         showLoginError("ID atau password salah!");
       } finally {
-        // Mengembalikan tombol ke kondisi semula setelah proses selesai
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalBtnHTML;
       }
@@ -97,13 +86,11 @@ function setupAuthEvents() {
     });
   }
 
-  // Logika untuk tombol lihat/sembunyikan password
   if (togglePasswordButton) {
     togglePasswordButton.addEventListener("click", function () {
       const type =
         passwordInput.getAttribute("type") === "password" ? "text" : "password";
       passwordInput.setAttribute("type", type);
-
       const icon = this.querySelector("i");
       icon.classList.toggle("fa-eye");
       icon.classList.toggle("fa-eye-slash");

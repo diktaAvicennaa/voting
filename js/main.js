@@ -1,5 +1,4 @@
-// File utama, menghubungkan semua modul dan event
-// Pastikan urutan script di index.html: firebase-config.js, utils.js, auth.js, voting.js, admin.js, main.js
+// js/main.js (Dengan Perbaikan Final)
 
 document.addEventListener("DOMContentLoaded", function () {
   // Setup event dan auth listener
@@ -25,8 +24,5 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Jika user login sebagai pemilih, tampilkan kandidat
-  if (auth.currentUser && auth.currentUser.email !== ADMIN_EMAIL) {
-    loadCandidates();
-  }
+  // Blok kode yang menyebabkan error sebelumnya sudah dihapus dari sini.
 });
