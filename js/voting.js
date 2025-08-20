@@ -151,11 +151,3 @@ function showMessage(message, type = "info") {
   }, 3000);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadCandidates();
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      checkIfUserHasVoted();
-    }
-  });
-});
